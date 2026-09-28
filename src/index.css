@@ -1,0 +1,4 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #F0F4F8; color: #111827; }
+button { font-family: inherit; }
+input { font-family: inherit; }
