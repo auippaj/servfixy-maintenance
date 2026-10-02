@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Wrench, RotateCcw, Home, Users, ClipboardList, LogOut, ChevronRight, AlertCircle, CheckCircle, Clock, X, Phone } from 'lucide-react';
+import { Wrench, RotateCcw, Home, Users, ClipboardList, LogOut, ChevronRight, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://servfixy-production.up.railway.app';
 
@@ -20,8 +20,8 @@ function Login({ onLogin }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
-      if (data.user.role !== 'maintenance' && data.user.role !== 'admin' && data.user.role !== 'css') {
-        throw new Error('Access denied. Servfixy staff only.');
+      if (data.user.role !== 'maintenance' && data.user.role !== 'admin') {
+        throw new Error('Access denied. Maintenance staff only.');
       }
       localStorage.setItem('mx_token', data.token);
       localStorage.setItem('mx_user', JSON.stringify(data.user));
@@ -67,7 +67,6 @@ function Login({ onLogin }) {
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 const NAV = [
-  { id: 'cssqueue', label: 'CSS Queue', icon: Phone },
   { id: 'workorders', label: 'Work Orders', icon: Wrench },
   { id: 'turns', label: 'Turns', icon: RotateCcw },
   { id: 'units', label: 'Units', icon: Home },
@@ -83,7 +82,7 @@ function Sidebar({ active, setActive, user, onLogout }) {
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Maintenance</div>
       </div>
       <nav style={{ flex: 1, padding: '16px 0' }}>
-        {NAV.filter(n => user?.role !== 'css' || n.id === 'cssqueue').map(({ id, label, icon: Icon }) => (
+        {NAV.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActive(id)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', border: 'none', background: active === id ? 'rgba(20,184,166,0.15)' : 'transparent', color: active === id ? '#14B8A6' : 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: active === id ? '700' : '400', cursor: 'pointer', borderLeft: active === id ? '3px solid #14B8A6' : '3px solid transparent', textAlign: 'left' }}>
             <Icon size={16} />
@@ -391,191 +390,16 @@ function ReportsTab({ token, properties }) {
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────────
-// ── CSS Queue Tab ─────────────────────────────────────────────────────────────
-const CSS_METHODS = [['call', 'Call'], ['text', 'Text'], ['voicemail', 'Voicemail'], ['email', 'Email']];
-const CSS_OUTCOMES = [['reached', 'Reached resident'], ['no_answer', 'No answer'], ['voicemail_left', 'Voicemail left'], ['text_sent', 'Text sent'], ['wrong_number', 'Wrong number']];
-
-function lsStateLabel(r) {
-  if (r.ls_arrived_at) return 'Tech arrived';
-  if (r.ls_accepted_at) return 'Responding';
-  return 'Awaiting acknowledgment';
-}
-
-function CssQueueTab({ token }) {
-  const [queue, setQueue] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
-  const [selectedId, setSelectedId] = useState(null);
-  const [log, setLog] = useState([]);
-  const [form, setForm] = useState({ method: 'call', outcome: 'no_answer', notes: '' });
-  const [busy, setBusy] = useState(false);
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/css/queue`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not load the queue');
-      setQueue(Array.isArray(data.queue) ? data.queue : []);
-      setErr('');
-    } catch (e) { setErr(e.message); }
-    finally { setLoading(false); }
-  }, [token]);
-
-  useEffect(() => {
-    load();
-    const iv = setInterval(load, 20000);
-    return () => clearInterval(iv);
-  }, [load]);
-
-  const loadLog = async (id) => {
-    try {
-      const res = await fetch(`${API_URL}/api/css/${id}/contact-log`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      setLog(res.ok && Array.isArray(data.log) ? data.log : []);
-    } catch (e) { setLog([]); }
-  };
-
-  const openRow = (r) => { setSelectedId(r.id); setLog([]); loadLog(r.id); };
-  const selected = queue.find(x => x.id === selectedId) || null;
-
-  const act = async (path, body, okMsg) => {
-    setBusy(true); setErr('');
-    try {
-      const res = await fetch(`${API_URL}/api/css/${selectedId}/${path}`, { method: 'POST', headers, body: JSON.stringify(body || {}) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Action failed');
-      await load();
-      await loadLog(selectedId);
-      if (path === 'push-to-triage') setSelectedId(null);
-      return okMsg;
-    } catch (e) { setErr(e.message); return null; }
-    finally { setBusy(false); }
-  };
-
-  const logAttempt = async () => {
-    const ok = await act('contact', form);
-    if (ok !== null) setForm(f => ({ ...f, notes: '' }));
-  };
-  const upgradeLs = async () => {
-    if (!window.confirm('Upgrade this request to Life Safety? This pages the on-call tech immediately.')) return;
-    await act('upgrade-ls');
-  };
-
-  const dueLabel = (r) => {
-    if (r.life_safety_flag) return null;
-    const m = r.contact_due_in_min;
-    return m >= 0 ? `Contact due in ${m}m` : `Overdue ${Math.abs(m)}m`;
-  };
-
-  return (
-    <div style={{ padding: '32px' }}>
-      <style>{'@keyframes mxPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5);} 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0);} }'}</style>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0C2A4A', margin: 0 }}>CSS Queue</h1>
-        <div style={{ fontSize: '12px', color: '#64748b' }}>{queue.length} open · refreshes every 20s</div>
-      </div>
-      {err && <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', padding: '10px 14px', borderRadius: '10px', marginBottom: '14px', fontSize: '13px' }}>{err}</div>}
-      {loading ? <div style={{ color: '#64748b' }}>Loading...</div> : queue.length === 0 ? (
-        <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#64748b' }}>Queue is clear.</div>
-      ) : (
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {queue.map(r => {
-              const ls = r.life_safety_flag && r.ls_flagged_at;
-              const overdue = !ls && r.contact_due_in_min < 0;
-              return (
-                <div key={r.id} onClick={() => openRow(r)}
-                  style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', cursor: 'pointer',
-                    borderLeft: `5px solid ${ls ? '#dc2626' : overdue ? '#f97316' : '#14B8A6'}`,
-                    outline: selectedId === r.id ? '2px solid #14B8A6' : 'none',
-                    animation: ls && !r.ls_accepted_at ? 'mxPulse 1.6s infinite' : 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                    <div style={{ fontWeight: '700', color: '#0C2A4A', fontSize: '14px' }}>
-                      {ls && <span style={{ color: '#dc2626', marginRight: '8px' }}>LIFE SAFETY</span>}
-                      {r.property_name} · Unit {r.unit_number || '—'}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>{r.minutes_waiting}m waiting</div>
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#334155', margin: '4px 0' }}>{r.title || r.category || 'Service request'}{r.issue_type ? ` — ${r.issue_type}` : ''}</div>
-                  <div style={{ display: 'flex', gap: '14px', fontSize: '12px', flexWrap: 'wrap' }}>
-                    {ls ? <span style={{ color: '#dc2626', fontWeight: '700' }}>{lsStateLabel(r)}</span>
-                        : <span style={{ color: overdue ? '#ea580c' : '#64748b', fontWeight: overdue ? '700' : '400' }}>{dueLabel(r)}</span>}
-                    <span style={{ color: '#64748b' }}>Attempts: {r.attempts}{r.reached ? ' · reached' : ''}</span>
-                    {r.lead_alert && <span style={{ color: '#b91c1c', fontWeight: '700' }}>Lead alert: no attempt logged</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {selected && (
-            <div style={{ width: '360px', flexShrink: 0, backgroundColor: '#fff', borderRadius: '12px', padding: '18px', position: 'sticky', top: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <div style={{ fontWeight: '800', color: '#0C2A4A' }}>{selected.property_name} · Unit {selected.unit_number || '—'}</div>
-                <button onClick={() => setSelectedId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
-              </div>
-              <div style={{ fontSize: '13px', color: '#334155', marginBottom: '10px', lineHeight: 1.5 }}>{selected.description || 'No description.'}</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Preferred time: {selected.preferred_time || 'Any time'}</div>
-              <div style={{ fontSize: '13px', marginBottom: '14px' }}>
-                <strong>{selected.resident_name || 'Resident'}</strong>{' '}
-                {selected.resident_phone ? <a href={`tel:${selected.resident_phone}`} style={{ color: '#0482FD' }}>{selected.resident_phone}</a> : <span style={{ color: '#94a3b8' }}>no phone on file</span>}
-              </div>
-
-              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginBottom: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#0C2A4A', marginBottom: '8px', textTransform: 'uppercase' }}>Log contact attempt</div>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                  <select value={form.method} onChange={e => setForm({ ...form, method: e.target.value })} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    {CSS_METHODS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                  <select value={form.outcome} onChange={e => setForm({ ...form, outcome: e.target.value })} style={{ flex: 1.4, padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    {CSS_OUTCOMES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                </div>
-                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Notes (pets, alarms, minor home alone, access...)" rows={3}
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontFamily: 'inherit', fontSize: '13px', marginBottom: '8px' }} />
-                <button onClick={logAttempt} disabled={busy}
-                  style={{ width: '100%', padding: '10px', backgroundColor: '#14B8A6', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1 }}>Log attempt</button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                {!selected.life_safety_flag && (
-                  <button onClick={upgradeLs} disabled={busy}
-                    style={{ flex: 1, padding: '10px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}>Upgrade to Life Safety</button>
-                )}
-                {!selected.life_safety_flag && (
-                  <button onClick={() => act('push-to-triage')} disabled={busy || !selected.can_push}
-                    title={selected.can_push ? '' : 'Reach the resident or log 2 attempts first'}
-                    style={{ flex: 1, padding: '10px', backgroundColor: selected.can_push ? '#0C2A4A' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: selected.can_push ? 'pointer' : 'not-allowed' }}>Push to Triage</button>
-                )}
-              </div>
-
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#0C2A4A', marginBottom: '6px', textTransform: 'uppercase' }}>Contact history</div>
-              {log.length === 0 ? <div style={{ fontSize: '12px', color: '#94a3b8' }}>No attempts logged yet.</div> : log.map(l => (
-                <div key={l.id} style={{ fontSize: '12px', color: '#334155', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <strong>{l.method}</strong> · {String(l.outcome).replace('_', ' ')} · {new Date(l.created_at).toLocaleString()}
-                  {l.first_name ? ` · ${l.first_name}` : ''}
-                  {l.notes ? <div style={{ color: '#64748b', marginTop: '2px' }}>{l.notes}</div> : null}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function App() {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('mx_user')); } catch { return null; }
   });
   const [token, setToken] = useState(() => localStorage.getItem('mx_token') || '');
-  const [active, setActive] = useState(() => { try { return JSON.parse(localStorage.getItem('mx_user'))?.role === 'css' ? 'cssqueue' : 'workorders'; } catch { return 'workorders'; } });
+  const [active, setActive] = useState('workorders');
   const [properties, setProperties] = useState([]);
   const [selectedProp, setSelectedProp] = useState('');
 
-  const onLogin = (u, t) => { setUser(u); setToken(t); setActive(u && u.role === 'css' ? 'cssqueue' : 'workorders'); };
+  const onLogin = (u, t) => { setUser(u); setToken(t); };
   const onLogout = () => {
     localStorage.removeItem('mx_token');
     localStorage.removeItem('mx_user');
@@ -597,18 +421,16 @@ export default function App() {
   if (!user || !token) return <Login onLogin={onLogin} />;
 
   const tabProps = { token, properties, selectedProp, setSelectedProp };
-  const view = user.role === 'css' ? 'cssqueue' : active; // css users only ever see the queue
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F0F4F8' }}>
-      <Sidebar active={view} setActive={setActive} user={user} onLogout={onLogout} />
+      <Sidebar active={active} setActive={setActive} user={user} onLogout={onLogout} />
       <main style={{ flex: 1, overflowY: 'auto' }}>
-        {view === 'cssqueue'    && <CssQueueTab token={token} />}
-        {view === 'workorders'  && <WorkOrdersTab  {...tabProps} />}
-        {view === 'turns'       && <TurnsTab       {...tabProps} />}
-        {view === 'units'       && <UnitsTab       {...tabProps} />}
-        {view === 'technicians' && <TechniciansTab token={token} />}
-        {view === 'reports'     && <ReportsTab     token={token} properties={properties} />}
+        {active === 'workorders'  && <WorkOrdersTab  {...tabProps} />}
+        {active === 'turns'       && <TurnsTab       {...tabProps} />}
+        {active === 'units'       && <UnitsTab       {...tabProps} />}
+        {active === 'technicians' && <TechniciansTab token={token} />}
+        {active === 'reports'     && <ReportsTab     token={token} properties={properties} />}
       </main>
     </div>
   );
