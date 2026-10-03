@@ -74,12 +74,15 @@ const NAV = [
   { id: 'reports', label: 'Reports', icon: ClipboardList },
 ];
 
-function Sidebar({ active, setActive, user, onLogout }) {
+function Sidebar({ active, setActive, user, onLogout, onHide }) {
   return (
     <div style={{ width: '220px', minHeight: '100vh', backgroundColor: '#185FA5', display: 'flex', flexDirection: 'column', padding: '0 0 24px', flexShrink: 0 }}>
       <div style={{ padding: '20px 20px 16px', background: '#ffffff', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
         <img src="https://i.imgur.com/OPDKgyD.png" alt="Servfixy" style={{ width: '140px', objectFit: 'contain' }} />
         <div style={{ color: '#185FA5', fontSize: '11px', fontWeight: '700', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Maintenance</div>
+      </div>
+      <div style={{ padding: '8px 12px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+        <button onClick={onHide} title='Hide sidebar' style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: '700', padding: '4px 8px', lineHeight: 1, borderRadius: '4px' }}>{'<<'}</button>
       </div>
       <nav style={{ flex: 1, padding: '16px 0' }}>
         {NAV.map(({ id, label, icon: Icon }) => (
@@ -395,6 +398,7 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('mx_user')); } catch { return null; }
   });
   const [token, setToken] = useState(() => localStorage.getItem('mx_token') || '');
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const [active, setActive] = useState('workorders');
   const [properties, setProperties] = useState([]);
   const [selectedProp, setSelectedProp] = useState('');
@@ -424,7 +428,9 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F0F4F8' }}>
-      <Sidebar active={active} setActive={setActive} user={user} onLogout={onLogout} />
+      {sidebarHidden
+        ? <button onClick={() => setSidebarHidden(false)} title='Show sidebar' style={{ position: 'fixed', left: 0, top: '14px', zIndex: 200, background: '#185FA5', color: '#ffffff', border: 'none', borderRadius: '0 8px 8px 0', padding: '10px 12px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', boxShadow: '2px 2px 8px rgba(0,0,0,0.25)' }}>{'>>'}</button>
+        : <Sidebar active={active} setActive={setActive} user={user} onLogout={onLogout} onHide={() => setSidebarHidden(true)} />}
       <main style={{ flex: 1, overflowY: 'auto' }}>
         {active === 'workorders'  && <WorkOrdersTab  {...tabProps} />}
         {active === 'turns'       && <TurnsTab       {...tabProps} />}
