@@ -76,25 +76,25 @@ const NAV = [
 
 function Sidebar({ active, setActive, user, onLogout }) {
   return (
-    <div style={{ width: '220px', minHeight: '100vh', backgroundColor: '#0C2A4A', display: 'flex', flexDirection: 'column', padding: '24px 0', flexShrink: 0 }}>
-      <div style={{ padding: '0 20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+    <div style={{ width: '220px', minHeight: '100vh', backgroundColor: '#185FA5', display: 'flex', flexDirection: 'column', padding: '0 0 24px', flexShrink: 0 }}>
+      <div style={{ padding: '20px 20px 16px', background: '#ffffff', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
         <img src="https://i.imgur.com/OPDKgyD.png" alt="Servfixy" style={{ width: '140px', objectFit: 'contain' }} />
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Maintenance</div>
+        <div style={{ color: '#185FA5', fontSize: '11px', fontWeight: '700', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Maintenance</div>
       </div>
       <nav style={{ flex: 1, padding: '16px 0' }}>
         {NAV.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActive(id)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', border: 'none', background: active === id ? 'rgba(20,184,166,0.15)' : 'transparent', color: active === id ? '#14B8A6' : 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: active === id ? '700' : '400', cursor: 'pointer', borderLeft: active === id ? '3px solid #14B8A6' : '3px solid transparent', textAlign: 'left' }}>
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', border: 'none', background: active === id ? 'rgba(255,255,255,0.18)' : 'transparent', color: active === id ? '#ffffff' : 'rgba(255,255,255,0.9)', fontSize: '14px', fontWeight: active === id ? '700' : '400', cursor: 'pointer', borderLeft: active === id ? '3px solid #14B8A6' : '3px solid transparent', textAlign: 'left' }}>
             <Icon size={16} />
             {label}
           </button>
         ))}
       </nav>
       <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '4px' }}>{user?.name || user?.email}</div>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '12px', textTransform: 'capitalize' }}>{user?.role}</div>
+        <div style={{ color: 'rgba(255,255,255,0.95)', fontSize: '12px', marginBottom: '4px' }}>{user?.name || user?.email}</div>
+        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px', marginBottom: '12px', textTransform: 'capitalize' }}>{user?.role}</div>
         <button onClick={onLogout}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
           <LogOut size={13} /> Sign Out
         </button>
       </div>
