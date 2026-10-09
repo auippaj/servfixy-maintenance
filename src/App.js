@@ -82,7 +82,7 @@ function Sidebar({ active, setActive, user, onLogout, onHide }) {
         <div style={{ color: '#185FA5', fontSize: '11px', fontWeight: '700', marginTop: '8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Maintenance</div>
       </div>
       <div style={{ padding: '8px 12px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
-        <button onClick={onHide} title='Hide sidebar' style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '14px', fontWeight: '700', padding: '4px 8px', lineHeight: 1, borderRadius: '4px' }}>{'<<'}</button>
+        <button onClick={onHide} title='Hide sidebar' style={{ background: 'none', border: 'none', color: '#111827', cursor: 'pointer', fontSize: '14px', fontWeight: '700', padding: '4px 8px', lineHeight: 1, borderRadius: '4px' }}>{'<<'}</button>
       </div>
       <nav style={{ flex: 1, padding: '16px 0' }}>
         {NAV.map(({ id, label, icon: Icon }) => (
@@ -97,7 +97,7 @@ function Sidebar({ active, setActive, user, onLogout, onHide }) {
         <div style={{ color: 'rgba(255,255,255,0.95)', fontSize: '12px', marginBottom: '4px' }}>{user?.name || user?.email}</div>
         <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px', marginBottom: '12px', textTransform: 'capitalize' }}>{user?.role}</div>
         <button onClick={onLogout}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#111827', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
           <LogOut size={13} /> Sign Out
         </button>
       </div>
@@ -188,7 +188,7 @@ function WorkOrdersTab({ token, properties, selectedProp, setSelectedProp }) {
               </div>
               <PriorityBadge priority={o.priority} />
               <Badge status={o.status} />
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>{o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>{o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</div>
             </div>
           ))}
         </div>
@@ -304,7 +304,7 @@ function TechniciansTab({ token }) {
                 </div>
                 <div>
                   <div style={{ fontWeight: '600', fontSize: '14px', color: '#0C2A4A' }}>{t.name || '—'}</div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{t.email}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{t.email}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
